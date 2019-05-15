@@ -7,8 +7,12 @@ from poco.drivers.android.uiautomation import AndroidUiautomationPoco
 poco = AndroidUiautomationPoco(use_airtest_input=True, screenshot_each_action=False)
 
 
-def get_goods_title(last_goods_title):
-    goods_title = []
+def get_goods_objs(last_goods_titles):
+    '''
+    获取全部商品组件的列表
+    :param last_goods_title: 上页商品名，检查翻页之后是否重名用
+    :return: 返回过滤后的商品组件列表
+    '''
     goods_obj_list = []
 
     obj_list = \
@@ -22,10 +26,14 @@ def get_goods_title(last_goods_title):
     if obj_list:
         for obj in obj_list:
             title = obj.get_text()
-            if len(title) > 8:  # 文字长度太短则跳过
-                goods_title.append(title)
-                goods_obj_list.append(obj)
-    # else:
-    #     print("没有找到商品组件")
+            if len(title) > 8:  # 文字长度太短不是商品名，则跳过
+                if title not in last_goods_titles:  # 若存在商品名重复则舍弃
+                    goods_obj_list.append(obj)
+    return goods_obj_list
 
-    return goods_title, goods_obj_list
+
+def get_goods_title(obj_list):
+    titles = []
+    for obj in obj_list:
+        titles.append(obj.get_text())
+    return titles
