@@ -10,23 +10,30 @@ from poco_function import *
 goods_titles = []
 goods_obj_list = []
 
-def save_urls(urls):
-    with open("list.txt", "w", encoding="utf-8") as file:
-        file.writelines([str(x) + "\n" for x in urls])
-    print("Saved!")
+
+def save_list(filename, list):
+    with open(filename, "w", encoding="utf-8") as file:
+        file.writelines([str(x) + "\n" for x in list])
+
 
 if __name__ == '__main__':
-    pages = 3
+    scroll_times = 1
 
-    for i in range(1, pages):
-        print(i)
+    while True:
+        print("第{}次滚动翻页：".format(scroll_times))
         goods_obj_list = get_goods_objs(goods_titles)
         goods_titles = get_goods_title(goods_obj_list)
-        print(goods_titles)
+
+        print("本页发现商品:{}个：{}".format(len(goods_titles), goods_titles))
         get_detail_pages(goods_obj_list)
-        if i <= (pages - 1):
+        save_list("list.txt", urls)
+        save_list("missing.txt", missing_goods)
+
+        if not is_ending():
+            scroll_times += 1
             poco().scroll(percent=scroll_percent, duration=scroll_duration)
-            sleep(scroll_time)
-        save_urls(urls)
+            # sleep(scroll_time)
+        else:
+            break
 
-
+    print("It's DONE!\n {} records saved, {} records missed.".format(len(urls), len(missing_goods)))

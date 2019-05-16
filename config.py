@@ -10,3 +10,4 @@ scroll_time = 3
 
 # urls链接汇总列表
 urls = []
+missing_goods = []

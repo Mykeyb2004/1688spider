@@ -7,6 +7,10 @@ from poco.drivers.android.uiautomation import AndroidUiautomationPoco
 
 poco = AndroidUiautomationPoco(use_airtest_input=True, screenshot_each_action=False)
 
+NAME = "name"
+TEXT = "text"
+NODE = "node"
+
 
 def get_goods_objs(last_goods_titles):
     '''
@@ -43,57 +47,80 @@ def get_goods_title(obj_list):
 def get_detail_pages(obj_list):
     for obj in obj_list:
         print("touch", obj.get_text())
+        poco.wait_for_any([obj])
         obj.click()
         if not get_url():
             print(obj.get_text(), "未能保存链接。")
+            missing_goods.append(obj.get_text())
         keyevent("BACK")
 
 
+def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True):
+    if type == "name":
+        obj = poco(name=obj_name)
+    if type == "text":
+        obj = poco(text=obj_name)
+    if type == "node":
+        obj = poco(eval(obj_name))
+    try:
+        print(wait_msg)
+        # poco.wait_for_any([obj], timeout=timeout)
+        obj.wait_for_appearance(timeout=timeout)
+    except:
+        print(missing_msg)
+        return False
+    if click:
+        obj.click()
+    return True
+
+
+def is_ending():
+    """
+    判断是否到了列表尾部
+
+    :return: True False
+    """
+    ending_obj = poco(name="com.alibaba.wireless:id/center_text", textMatches='^没有.*$')
+    if ending_obj:
+        print(ending_obj.get_text())
+        return True
+    else:
+        return False
+
+
 def get_url():
-    timeout = 30
+    """
+    通过点击并复制短信按钮，获取分享商品的链接，将之保存到一个list中
+
+    :return:
+    """
+    timeout = 10
 
     # 点击“分享”按钮
-    share_btn = poco("com.alibaba.wireless:id/share_text")
-    try:
-        print("正在等待点击分享按钮")
-        poco.wait_for_any([share_btn], timeout=timeout)
-    except:
-        print("未找到分享按钮")
-        return False
-    share_btn.click()
+    wait_for_click("com.alibaba.wireless:id/share_text", NAME, "查找“点击分享”按钮", "未找到分享按钮", timeout=timeout)
 
     # 点击“短信”按钮
-    copy_url = poco(text="短信")
-    try:
-        print("正在等待点击短信按钮")
-        poco.wait_for_any([copy_url], timeout=timeout)
-    except:
-        print("未找到短信按钮")
-        return False
-    copy_url.click()
+    wait_for_click("短信", TEXT, "查找“短信”按钮", "未找到“短信”按钮", timeout=timeout)
 
     # 进入系统短信界面
+    retries = 0
+    while retries < 3:  # 未出现短信界面时，重试的次数
+        if not wait_for_click("com.android.mms:id/embedded_text_editor", NAME, "查找手机短信界面", "未出现短信界面", timeout=timeout,
+                              click=False):
+            if retries == 0:
+                print("第", retries + 1, "次重试点击短信按钮")
+            wait_for_click("短信", TEXT, "查找“短信”按钮", "未找到“短信”按钮", timeout=timeout)
+            retries += 1
+        else:
+            break  # 已出现短信界面
+    # 读取短信界面中的分享链接信息，保存到urls列表中
     sms_text = poco(name="com.android.mms:id/embedded_text_editor")
-    try:
-        print("正在等待出现复制完成信息")
-        poco.wait_for_any([sms_text], timeout=timeout)
-    except:
-        print("未找到短信编辑组件")
-        return False
     urls.append(sms_text.get_text())
 
     # 退出系统短信界面
-    keyevent("BACK")
-    sleep(0.3)
-    keyevent("BACK")
+    wait_for_click("com.android.mms:id/home", NAME, "查找短信退出按钮", "未找到短信退出按钮", timeout=timeout)
 
-    # 点击“确定”按钮，放弃编辑手机短信
-    quit_btn = poco(text="确定")
-    try:
-        print("正在放弃编辑短信")
-        poco.wait_for_any([quit_btn], timeout=timeout)
-    except:
-        print('未找到短信退出的确定按钮')
-        return False
-    quit_btn.click()
+    # 点击“确定”按钮，退出编辑手机短信
+    wait_for_click("确定", TEXT, "查找确定退出短信界面的按钮", "未找到确定退出短信界面的按钮", timeout=timeout)
+
     return True
