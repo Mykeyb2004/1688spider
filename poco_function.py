@@ -1,5 +1,8 @@
+# -*- encoding=utf8 -*-
+
 from config import *
 from airtest.core.api import *
+from utils import *
 
 auto_setup(__file__)
 
@@ -14,7 +17,7 @@ NODE = "node"
 
 def get_goods_objs(last_goods_titles):
     '''
-    获取全部商品组件的列表
+    获取当前可见页面上的全部商品组件的列表
     :param last_goods_title: 上页商品名，检查翻页之后是否重名用
     :return: 返回过滤后的商品组件列表
     '''
@@ -52,7 +55,8 @@ def get_detail_pages(obj_list):
         if not get_url():
             print(obj.get_text(), "未能保存链接。")
             missing_goods.append(obj.get_text())
-        keyevent("BACK")
+        # 点击返回按钮，返回列表页
+        wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "", "")
 
 
 def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True):
@@ -95,12 +99,17 @@ def get_url():
     :return:
     """
     timeout = 10
+    share_text = ''
 
     # 点击“分享”按钮
     wait_for_click("com.alibaba.wireless:id/share_text", NAME, "查找“点击分享”按钮", "未找到分享按钮", timeout=timeout)
 
     # 点击“短信”按钮
     wait_for_click("短信", TEXT, "查找“短信”按钮", "未找到“短信”按钮", timeout=timeout)
+
+    output = exec_cmd(adb_get_clipboard)
+    print(output)
+    print(parse_url(output))
 
     # 进入系统短信界面
     retries = 0
