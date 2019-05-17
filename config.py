@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
+# import logging
+
 
 # 上翻屏幕的距离
 scroll_percent = 0.6

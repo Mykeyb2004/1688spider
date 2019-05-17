@@ -1,7 +1,8 @@
 # -*- encoding=utf8 -*-
 
-from config import *
 from airtest.core.api import *
+
+from config import *
 from utils import *
 
 auto_setup(__file__)
@@ -18,7 +19,7 @@ NODE = "node"
 def get_goods_objs(last_goods_titles):
     '''
     获取当前可见页面上的全部商品组件的列表
-    :param last_goods_title: 上页商品名，检查翻页之后是否重名用
+    :param last_goods_titles: 上页商品名，检查翻页之后是否重名用
     :return: 返回过滤后的商品组件列表
     '''
     goods_obj_list = []
@@ -49,14 +50,14 @@ def get_goods_title(obj_list):
 
 def get_detail_pages(obj_list):
     for obj in obj_list:
-        print("touch", obj.get_text())
+        print("正在读取产品：", obj.get_text())
         poco.wait_for_any([obj])
         obj.click()
         if not get_url():
             print(obj.get_text(), "未能保存链接。")
             missing_goods.append(obj.get_text())
         # 点击返回按钮，返回列表页
-        wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "", "")
+        wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "查找返回列表按钮", "未找到返回列表按钮")
 
 
 def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True):
@@ -99,37 +100,36 @@ def get_url():
     :return:
     """
     timeout = 10
-    share_text = ''
 
     # 点击“分享”按钮
     wait_for_click("com.alibaba.wireless:id/share_text", NAME, "查找“点击分享”按钮", "未找到分享按钮", timeout=timeout)
 
-    # 点击“短信”按钮
-    wait_for_click("短信", TEXT, "查找“短信”按钮", "未找到“短信”按钮", timeout=timeout)
+    # 等待二维码生成
+    wait_for_QR()
 
+    # 点击“复制口令”按钮
+    copy_obj = poco("android:id/content").child("android.widget.FrameLayout").offspring(
+        "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(
+        "com.alibaba.wireless:id/dynamic_share_recycler_view").child("android.widget.LinearLayout")[0].child(
+        "android.widget.LinearLayout").child(name="com.alibaba.wireless:id/item_name")
+    copy_obj.wait_for_appearance()
+    copy_obj.click()
+
+    # 通过adb读取剪贴板中的分享口令
     output = exec_cmd(adb_get_clipboard)
-    print(output)
-    print(parse_url(output))
-
-    # 进入系统短信界面
-    retries = 0
-    while retries < 3:  # 未出现短信界面时，重试的次数
-        if not wait_for_click("com.android.mms:id/embedded_text_editor", NAME, "查找手机短信界面", "未出现短信界面", timeout=timeout,
-                              click=False):
-            if retries == 0:
-                print("第", retries + 1, "次重试点击短信按钮")
-            wait_for_click("短信", TEXT, "查找“短信”按钮", "未找到“短信”按钮", timeout=timeout)
-            retries += 1
-        else:
-            break  # 已出现短信界面
-    # 读取短信界面中的分享链接信息，保存到urls列表中
-    sms_text = poco(name="com.android.mms:id/embedded_text_editor")
-    urls.append(sms_text.get_text())
-
-    # 退出系统短信界面
-    wait_for_click("com.android.mms:id/home", NAME, "查找短信退出按钮", "未找到短信退出按钮", timeout=timeout)
-
-    # 点击“确定”按钮，退出编辑手机短信
-    wait_for_click("确定", TEXT, "查找确定退出短信界面的按钮", "未找到确定退出短信界面的按钮", timeout=timeout)
+    share_text = parse_outpost(output)
+    print("分享口令：", share_text)
+    urls.append(share_text)
 
     return True
+
+
+def wait_for_QR():
+    obj_list = poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+        "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
+        type="android.widget.Image")
+
+    for x in obj_list:
+        # print(x.attr("type"))
+        print("等待出现二维码")
+        x.wait_for_appearance()

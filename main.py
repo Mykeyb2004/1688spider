@@ -3,7 +3,6 @@
 
 __author__ = "Minni"
 
-from config import *
 from poco_function import *
 
 # 上页中的商品名，为检查是否在翻页后重复之用
@@ -26,7 +25,7 @@ if __name__ == '__main__':
         goods_obj_list = get_goods_objs(goods_titles)
         goods_titles = get_goods_title(goods_obj_list)
 
-        print("本页发现商品:{}个：{}".format(len(goods_titles), goods_titles))
+        print("本页发现商品:{}个".format(len(goods_titles)))
         get_detail_pages(goods_obj_list)
         save_list("list.txt", urls)
         save_list("missing.txt", missing_goods)
@@ -38,7 +37,7 @@ if __name__ == '__main__':
             break
 
         # 调试时限制翻页数用，正式运行时记得注释掉
-        if scroll_pages >= 2:
-            break
+        # if scroll_pages >= 2:
+        #     break
 
     print("It's DONE!\n {} records saved, {} records missed.".format(len(urls), len(missing_goods)))

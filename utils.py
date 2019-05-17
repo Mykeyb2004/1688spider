@@ -8,12 +8,12 @@ def exec_cmd(cmd):
     return text.decode('utf-8')
 
 
-def parse_url(text):
-    if text:
+def parse_outpost(outpost):
+    if outpost:
         start_flag = '"'  # 首个引号为开始截取字符位置
-        start_postion = text.find(start_flag)
-        text = text[start_postion + 1:-3]
+        start_postion = outpost.find(start_flag)
+        outpost = outpost[start_postion + 1:-3]
     else:
-        text = "Not Matched"
-        return text
-    return text
+        outpost = "Not Matched"
+        return outpost
+    return outpost
