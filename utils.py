@@ -17,3 +17,8 @@ def parse_outpost(outpost):
         outpost = "Not Matched"
         return outpost
     return outpost
+
+
+def save_list(filename, list):
+    with open(filename, "a+", encoding="utf-8") as file:
+        file.writelines([str(x) + "\n" for x in list])

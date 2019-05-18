@@ -3,6 +3,9 @@
 # import logging
 
 
+# 记录程序起始时间
+start_time = 0
+
 # 上翻屏幕的距离
 scroll_percent = 0.6
 # 上翻屏幕的滑动时间

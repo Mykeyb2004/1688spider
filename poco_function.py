@@ -1,5 +1,7 @@
 # -*- encoding=utf8 -*-
 
+import datetime
+
 from airtest.core.api import *
 
 from config import *
@@ -48,16 +50,24 @@ def get_goods_title(obj_list):
     return titles
 
 
-def get_detail_pages(obj_list):
+def get_detail_pages(obj_list, records):
     for obj in obj_list:
-        print("正在读取产品：", obj.get_text())
+        print("[信息] 正在读取产品：", obj.get_text())
+        page_start_time = time.process_time()  # 页面爬取启动时间
         poco.wait_for_any([obj])
         obj.click()
         if not get_url():
             print(obj.get_text(), "未能保存链接。")
             missing_goods.append(obj.get_text())
         # 点击返回按钮，返回列表页
-        wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "查找返回列表按钮", "未找到返回列表按钮")
+        wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "[界面] 查找返回列表按钮", "未找到返回列表按钮")
+        end_time = time.process_time()
+        page_cost = end_time - page_start_time  # 单页面耗时
+        cost = end_time - start_time  # 累计耗时
+        records += 1
+        print("[信息] 累计耗时[%s]，页面耗时[%s]， 共计[%d]条数据已保存。" % (
+            datetime.timedelta(seconds=cost), datetime.timedelta(seconds=page_cost), records))
+    return records
 
 
 def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True):
@@ -102,7 +112,7 @@ def get_url():
     timeout = 10
 
     # 点击“分享”按钮
-    wait_for_click("com.alibaba.wireless:id/share_text", NAME, "查找“点击分享”按钮", "未找到分享按钮", timeout=timeout)
+    wait_for_click("com.alibaba.wireless:id/share_text", NAME, "[界面] 查找“点击分享”按钮", "[信息] 未找到分享按钮", timeout=timeout)
 
     # 等待二维码生成
     wait_for_QR()
@@ -118,7 +128,7 @@ def get_url():
     # 通过adb读取剪贴板中的分享口令
     output = exec_cmd(adb_get_clipboard)
     share_text = parse_outpost(output)
-    print("分享口令：", share_text)
+    print("[信息] 获取分享口令：", share_text)
     urls.append(share_text)
 
     return True
@@ -129,7 +139,8 @@ def wait_for_QR():
         "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
         type="android.widget.Image")
 
-    for x in obj_list:
+    for i, x in enumerate(obj_list):
         # print(x.attr("type"))
-        print("等待出现二维码")
+        if i == len(obj_list) - 1:
+            print("[界面] 正在等待出现二维码，执行点击复制口令动作...")
         x.wait_for_appearance()
