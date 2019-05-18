@@ -7,9 +7,9 @@
 start_time = 0
 
 # 上翻屏幕的距离
-scroll_percent = 0.6
+scroll_percent = 0.7
 # 上翻屏幕的滑动时间
-scroll_duration = 0.3
+scroll_duration = 0.4
 # 翻页间隔时间
 scroll_time = 3
 

@@ -17,11 +17,11 @@ if __name__ == '__main__':
     start_time = time.process_time()
 
     while True:
-        print("第{}次滚动翻页：".format(scroll_pages))
+        print("[信息] 第{}页：".format(scroll_pages))
         goods_obj_list = get_goods_objs(goods_titles)
         goods_titles = get_goods_title(goods_obj_list)
 
-        print("本页发现商品:{}个".format(len(goods_titles)))
+        print("[信息] 本页发现{}个商品。".format(len(goods_titles)))
         total_records = get_detail_pages(goods_obj_list, total_records)
         save_list("list.txt", urls)
         save_list("missing.txt", missing_goods)

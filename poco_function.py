@@ -3,6 +3,7 @@
 import datetime
 
 from airtest.core.api import *
+from poco.exceptions import PocoNoSuchNodeException
 
 from config import *
 from utils import *
@@ -59,6 +60,8 @@ def get_detail_pages(obj_list, records):
         if not get_url():
             print(obj.get_text(), "未能保存链接。")
             missing_goods.append(obj.get_text())
+
+        # wait_for_QR_disappear()
         # 点击返回按钮，返回列表页
         wait_for_click("com.alibaba.wireless:id/v5_common_return", NAME, "[界面] 查找返回列表按钮", "未找到返回列表按钮")
         end_time = time.process_time()
@@ -95,7 +98,8 @@ def is_ending():
 
     :return: True False
     """
-    ending_obj = poco(name="com.alibaba.wireless:id/center_text", textMatches='^没有.*$')
+    # ending_obj = poco(name="com.alibaba.wireless:id/center_text", textMatches='^没有.*$')  # 通配符查找太消耗资源
+    ending_obj = poco(name="com.alibaba.wireless:id/center_text", text="没有更多数据了")
     if ending_obj:
         print(ending_obj.get_text())
         return True
@@ -131,6 +135,9 @@ def get_url():
     print("[信息] 获取分享口令：", share_text)
     urls.append(share_text)
 
+    # sleep(0.5)
+    # copy_obj.wait_for_disappearance()
+
     return True
 
 
@@ -139,8 +146,21 @@ def wait_for_QR():
         "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
         type="android.widget.Image")
 
-    for i, x in enumerate(obj_list):
-        # print(x.attr("type"))
-        if i == len(obj_list) - 1:
-            print("[界面] 正在等待出现二维码，执行点击复制口令动作...")
-        x.wait_for_appearance()
+    try:
+        for i, x in enumerate(obj_list):
+            # print(x.attr("type"))
+            if i == len(obj_list) - 1:
+                print("[界面] 正在等待出现二维码，执行点击复制口令动作...")
+            x.wait_for_appearance(60)
+    except PocoNoSuchNodeException:
+        print("[错误] 未出现二维码界面")
+        return False
+
+
+def wait_for_QR_disappear():
+    # 查找分享界面的外部容器
+    container_obj = \
+        poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+            "android.view.View").child("android.view.View")[0].child("android.view.View")
+    print("[界面] 等待二维码外部容器框架消失")
+    container_obj.wait_for_disappearance(60)
