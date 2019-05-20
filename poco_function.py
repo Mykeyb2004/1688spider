@@ -21,7 +21,7 @@ NODE = "node"
 
 def get_goods_objs(last_goods_titles):
     '''
-    获取当前可见页面上的全部商品组件的列表
+    获取当前页面上全部可见的商品组件列表
     :param last_goods_titles: 上页商品名，检查翻页之后是否重名用
     :return: 返回过滤后的商品组件列表
     '''
@@ -45,21 +45,38 @@ def get_goods_objs(last_goods_titles):
 
 
 def get_goods_title(obj_list):
+    """
+    获取列表中的产品名
+    :param obj_list:
+    :return:
+    """
     titles = []
     for obj in obj_list:
         titles.append(obj.get_text())
     return titles
 
 
-def get_detail_pages(obj_list, records):
+def walk_detail_pages(obj_list, list):
+    """
+    主要动作为：
+    1. 遍历产品列表obj
+    2. 从列表页点击进入详情页
+    3. 调用详情页函数后返回到列表页
+
+    :param obj_list:
+    :param records:
+    :return: 返回已遍历的总产品数
+    """
     for obj in obj_list:
         print("[信息] 正在读取产品：", obj.get_text())
         page_start_time = time.process_time()  # 页面爬取启动时间
         poco.wait_for_any([obj])
-        obj.click()
-        if not get_url():
-            print(obj.get_text(), "未能保存链接。")
-            missing_goods.append(obj.get_text())
+        obj.click()  # 点击进入详情页
+
+        # if not get_url():
+        #     print(obj.get_text(), "未能保存链接。")
+
+        result_list = get_url(list)
 
         # wait_for_QR_disappear()
         # 点击返回按钮，返回列表页
@@ -67,10 +84,79 @@ def get_detail_pages(obj_list, records):
         end_time = time.process_time()
         page_cost = end_time - page_start_time  # 单页面耗时
         cost = end_time - start_time  # 累计耗时
-        records += 1
-        print("[信息] 累计耗时[%s]，页面耗时[%s]， 共计[%d]条数据已保存。" % (
-            datetime.timedelta(seconds=cost), datetime.timedelta(seconds=page_cost), records))
-    return records
+
+        # print("[信息] 累计耗时[%s]，页面耗时[%s]， 共计[%d]条数据已保存。" % (
+        #     datetime.timedelta(seconds=cost), datetime.timedelta(seconds=page_cost), len(result_list)))
+    return result_list
+
+
+def get_url(list):
+    """
+    1. 点击分享按钮
+    1. 点击复制分享口令按钮，获取分享产品的链接
+    2. 保存产品链接到list中
+    3. 保存到文件中
+
+    :return:
+    """
+    timeout = 10
+
+    # 点击“分享”按钮
+    wait_for_click("com.alibaba.wireless:id/share_text", NAME, "[界面] 查找“点击分享”按钮", "[信息] 未找到分享按钮", timeout=timeout)
+
+    # 等待出现二维码
+    print("[界面] 查找二维码")
+    QR_obj = poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+        "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
+        type="android.widget.Image")[-1]
+    QR_obj.wait_for_appearance()
+
+    # 点击“复制口令”按钮
+    copy_obj = poco("android:id/content").child("android.widget.FrameLayout").offspring(
+        "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(
+        "com.alibaba.wireless:id/dynamic_share_recycler_view").child("android.widget.LinearLayout")[0].child(
+        "android.widget.LinearLayout").child(name="com.alibaba.wireless:id/item_name")
+    copy_obj.wait_for_appearance()
+    copy_obj.click()
+
+    # 通过adb读取剪贴板中的分享口令
+    output = exec_cmd(adb_get_clipboard)
+    share_text = parse_outpost(output)
+    print("[信息] 获取分享口令：", share_text)
+    result_list = save_list(DB, share_text, list)
+    print("[信息] 累计保存%d条数据。" % len(result_list))
+
+    # sleep(3)
+    # print(QR_obj.attr('visible'))
+
+    # sleep(0.5)
+    # copy_obj.wait_for_disappearance()
+    return result_list
+
+
+# def wait_for_QR():
+#     obj_list = poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+#         "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
+#         type="android.widget.Image")
+#
+#     try:
+#         for i, x in enumerate(obj_list):
+#             # print(x.attr("type"))
+#             if i == len(obj_list) - 1:
+#                 print("[界面] 正在等待出现二维码，执行点击复制口令动作...")
+#             x.wait_for_appearance(60)
+#     except PocoNoSuchNodeException:
+#         print("[错误] 未出现二维码界面")
+#         return False
+
+
+def wait_for_QR_disappear():
+    # 查找分享界面的外部容器
+    container_obj = \
+        poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+            "android.view.View").child("android.view.View")[0].child("android.view.View")
+    print("[界面] 等待二维码外部容器框架消失")
+    container_obj.wait_for_disappearance(60)
 
 
 def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True):
@@ -82,7 +168,6 @@ def wait_for_click(obj_name, type, wait_msg, missing_msg, timeout=30, click=True
         obj = poco(eval(obj_name))
     try:
         print(wait_msg)
-        # poco.wait_for_any([obj], timeout=timeout)
         obj.wait_for_appearance(timeout=timeout)
     except:
         print(missing_msg)
@@ -107,60 +192,8 @@ def is_ending():
         return False
 
 
-def get_url():
-    """
-    通过点击并复制短信按钮，获取分享商品的链接，将之保存到一个list中
-
-    :return:
-    """
-    timeout = 10
-
-    # 点击“分享”按钮
-    wait_for_click("com.alibaba.wireless:id/share_text", NAME, "[界面] 查找“点击分享”按钮", "[信息] 未找到分享按钮", timeout=timeout)
-
-    # 等待二维码生成
-    wait_for_QR()
-
-    # 点击“复制口令”按钮
-    copy_obj = poco("android:id/content").child("android.widget.FrameLayout").offspring(
-        "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(
-        "com.alibaba.wireless:id/dynamic_share_recycler_view").child("android.widget.LinearLayout")[0].child(
-        "android.widget.LinearLayout").child(name="com.alibaba.wireless:id/item_name")
-    copy_obj.wait_for_appearance()
-    copy_obj.click()
-
-    # 通过adb读取剪贴板中的分享口令
-    output = exec_cmd(adb_get_clipboard)
-    share_text = parse_outpost(output)
-    print("[信息] 获取分享口令：", share_text)
-    urls.append(share_text)
-
-    # sleep(0.5)
-    # copy_obj.wait_for_disappearance()
-
-    return True
-
-
-def wait_for_QR():
-    obj_list = poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+def QR():
+    QR_obj = poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
         "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
-        type="android.widget.Image")
-
-    try:
-        for i, x in enumerate(obj_list):
-            # print(x.attr("type"))
-            if i == len(obj_list) - 1:
-                print("[界面] 正在等待出现二维码，执行点击复制口令动作...")
-            x.wait_for_appearance(60)
-    except PocoNoSuchNodeException:
-        print("[错误] 未出现二维码界面")
-        return False
-
-
-def wait_for_QR_disappear():
-    # 查找分享界面的外部容器
-    container_obj = \
-        poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
-            "android.view.View").child("android.view.View")[0].child("android.view.View")
-    print("[界面] 等待二维码外部容器框架消失")
-    container_obj.wait_for_disappearance(60)
+        type="android.widget.Image")[-1]
+    return QR_obj
