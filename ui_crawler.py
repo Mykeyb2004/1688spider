@@ -128,7 +128,9 @@ def get_detail_data():
 
                     seller_info_checked = True
 
-            if trade_info_checked and seller_info_checked:
+            if trade_info_checked and seller_info_checked:  # 都找到了，退出
+                break
+            if trade_info_checked == False and seller_info_checked == True:  # 先找到了厂家，则退出
                 break
             check_page += 1
             scroll_detail_page()
