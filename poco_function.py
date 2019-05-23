@@ -7,6 +7,7 @@ from poco.exceptions import PocoNoSuchNodeException
 
 from config import *
 from utils import *
+from logfile import *
 
 auto_setup(__file__)
 

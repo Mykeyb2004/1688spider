@@ -36,7 +36,8 @@ def time_log(func):
         print('call %s():' % func.__name__)
         result = func(*args, **kw)
         elapsed_time = time.time() - start_time
-        print("elapsed_time: %s" % format_time(elapsed_time))
+        # print("elapsed_time: %s" % format_time(elapsed_time))
+        print("elapsed_time: %d" % elapsed_time)
         return result
 
     return wrapper
@@ -87,3 +88,37 @@ def load_list(filename):
     with open(filename, "r", encoding="utf-8") as file:
         list = file.readlines()
     return list
+
+
+def color_similar_degree(rgb1, rgb2):
+    r1, g1, b1 = rgb1
+    r2, g2, b2 = rgb2
+    r_mean = (r1 + r2) / 2
+    r = r1 - r2
+    g = g1 - g2
+    b = b1 - b2
+    return math.sqrt((2 + r_mean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - r_mean) / 256) * (b ** 2))
+
+
+def mkdir(path):
+    # 去除首位空格
+    path = path.strip()
+    # 去除尾部 \ 符号
+    path = path.rstrip("\\")
+
+    # 判断路径是否存在
+    # 存在     True
+    # 不存在   False
+    exists = os.path.exists(path)
+
+    # 判断结果
+    if not exists:
+        # 如果不存在则创建目录
+        # 创建目录操作函数
+        os.makedirs(path)
+        # print(path + ' 创建成功')
+        return True
+    else:
+        # 如果目录存在则不创建，并提示目录已存在
+        # print(path + ' 目录已存在')
+        return False

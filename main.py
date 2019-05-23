@@ -27,7 +27,6 @@ if __name__ == '__main__':
         print("[信息] 本页发现{}个商品。".format(len(goods_titles)))
         share_list = walk_detail_pages(goods_obj_list, share_list)
 
-
         if not is_ending():
             scroll_pages += 1
             poco().scroll(percent=scroll_percent, duration=scroll_duration)
