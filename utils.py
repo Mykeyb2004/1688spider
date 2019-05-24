@@ -4,6 +4,7 @@ import os
 import functools
 import math
 import time
+from logfile import logger
 
 
 def format_time(all_time):
@@ -33,11 +34,11 @@ def time_log(func):
     @functools.wraps(func)
     def wrapper(*args, **kw):
         start_time = time.time()
-        print('call %s():' % func.__name__)
+        logger.info('调用函数 = %s()' % func.__name__)
         result = func(*args, **kw)
         elapsed_time = time.time() - start_time
-        # print("elapsed_time: %s" % format_time(elapsed_time))
-        print("elapsed_time: %d" % elapsed_time)
+        logger.info("页面读取数据耗时 = %s" % format_time(elapsed_time))
+        # print("elapsed_time: %d" % elapsed_time)
         return result
 
     return wrapper
