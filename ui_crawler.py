@@ -88,15 +88,20 @@ def enter_detail_page(goods):
 
 @time_log
 def get_detail_data():
+    table = init_table()
+    trade_data = []
+    seller_info = ()
+
     try:
         product_object = poco("com.alibaba.wireless:id/tv_detail_subject")
         product = product_object.get_text()
         product = product.strip(' ')
         logger.info("扫描商品 = {}".format(product))
 
-        price_list = get_price()
-        get_logistics()
-        get_share_text()
+        price1, price2, price3 = get_price()
+        logistics_city, logistics_price = get_logistics()
+        share_text = get_share_text()
+        snapshot = get_goods_snapshot()
 
         check_page_no = 0
         trade_info_checked = False  # 保存是否扫描过交易信息
@@ -109,7 +114,7 @@ def get_detail_data():
                     if not object_in_view(TRADE_INFO, pos):
                         scroll_to_top(pos)
                     logger.info("读取交易信息")
-                    get_trade_info()
+                    trade_data = get_trade_info()
                     trade_info_checked = True
             if not seller_info_checked:
                 if headers[SELLER_INFO]:
@@ -117,7 +122,7 @@ def get_detail_data():
                     if not object_in_view(SELLER_INFO, pos):
                         scroll_to_top(pos)
                     logger.info("读取厂家信息")
-                    get_seller_info()
+                    seller_info = get_seller_info()
                     seller_info_checked = True
             # 都找到了，退出本次扫描
             if trade_info_checked and seller_info_checked:
@@ -127,13 +132,32 @@ def get_detail_data():
                 break
             check_page_no += 1
             scroll_detail_page()  # 滚动一整页
+
+        # 组合采集的数据
+        table['share_text'] = share_text
+        table['snapshot'] = snapshot
+        table['price1'] = price1
+        table['price2'] = price2
+        table['price3'] = price3
+        table['logistics_city'] = logistics_city
+        table['logistics_price'] = logistics_price
+        table['trade_data'] = trade_data
+        table['company'], table['years'], table['back_rate'], table['buyer'], table['desc'], table['respo'], table \
+            ['delivery'], table['sign_desc'], table['sign_respo'], table['sign_delivery'] = seller_info
+        if table['desc'] is None:
+            table['desc'] = 0
+        if table['respo'] is None:
+            table['respo'] = 0
+        if table['delivery'] is None:
+            table['delivery'] = 0
+
+        print(table)
     except Exception as e:
         capture_error(e)
-    return True
 
 
 def scroll_detail_page():
-    poco.swipe([0, 0.9], [0, 0.2], duration=0.6)
+    poco.swipe([0, 0.9], [0, 0.2], duration=0.5)
 
 
 def find_key_info():
@@ -173,10 +197,10 @@ def get_trade_info():
         # 读取交易数据
         msg1 = poco("com.alibaba.wireless:id/lv_board").offspring("com.alibaba.wireless:id/title")
         for x in msg1:
-            trade_data.append(x)
+            trade_data.append(x.get_text())
         msg2 = poco("com.alibaba.wireless:id/lv_board").offspring("com.alibaba.wireless:id/subTitle")
         for x in msg2:
-            trade_data.append(x)
+            trade_data.append(x.get_text())
         # 点击交易数据详情退出按钮
         quit_btn = poco("com.alibaba.wireless:id/btn_board")
         quit_btn.click()
@@ -354,7 +378,22 @@ def color_to_sign(image):
     # image.save('aa.jpg', image.format)
 
 
-def element_snapshot(poco_object, save=False):
+def get_goods_snapshot():
+    """
+    保存商品图片
+    :return: 返回保存的文件名
+    """
+    path = r'%s\%s' % (sys.path[0], 'snap')
+    mkdir(path)
+    filename = path + r"\snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
+    # print(filename)
+    goods_snapshot = poco("com.alibaba.wireless:id/image")
+    goods_snapshot.wait_for_appearance(5)
+    element_snapshot(goods_snapshot, save=True, filename=filename, width=480)
+    return filename
+
+
+def element_snapshot(poco_object, save=False, filename="ele", width=720):
     """
     airtest目前只能对全屏截图，本函数可对指定组件截图，并返回一个PIL.Image对象。
     ps 保存临时文件再读出来的方式是影响效能的，要优化。
@@ -362,9 +401,11 @@ def element_snapshot(poco_object, save=False):
 
     :param poco_object: poco对象
     :param save: 是否保存截图文件
+    :param filename: 保存的文件名
+    :param width: 图片宽度
     :return: 返回PIL.Image对象
     """
-    b64img, fmt = poco.snapshot(width=720)
+    b64img, fmt = poco.snapshot(width=width)
     open('{}.{}'.format('temp', fmt), 'wb').write(b64decode(b64img))
     # TODO:载入二进制数据，生成Image对象。此处需优化，本无需保存到本地
     shot = Image.open("%s.%s" % ('temp', fmt))
@@ -380,7 +421,7 @@ def element_snapshot(poco_object, save=False):
     box = (x1, y1, x2, y2)
     region = shot.crop(box)
     if save:
-        filename = "ele" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
+        # filename = "ele" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
         region.save(filename + '.' + fmt, shot.format)
     return region
 
@@ -416,9 +457,9 @@ def capture_error(msg):
     logger.error("Error captured, snapshot =%s".format(msg, filename))
 
 
-def snapshot_log():
-    filename = "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    snapshot(filename)
+# def snapshot_log():
+#     filename = "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
+#     snapshot(filename)
 
 
 def object_in_view(_object, pos):

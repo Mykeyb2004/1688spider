@@ -7,6 +7,31 @@ import time
 from logfile import logger
 
 
+def init_table():
+    table = {
+        "share_text": "",  # 分享口令
+        "snapshot": "",  # 产品截图文件名
+        "price1": "",  # 价格1
+        "price2": "",  # 价格2
+        "price3": "",  # 价格3
+        "logistics_city": "",  # 物流城市
+        "logistics_price": "",  # 物流价格
+        "trade_data": [],  # 交易数据数组
+        "company": "",  # 公司名
+        "years": "",  # 成立年限
+        "back_rate": "",  # 回头率
+        "buyer": "",  # 90天内买家
+        "desc": "",  # 货描
+        "respo": "",  # 响应
+        "delivery": "",  # 发货
+        "sign_desc": 0,  # 货描符号
+        "sign_respo": 0,  # 响应符号
+        "sign_delivery": 0  # 发货符号
+
+    }
+    return table
+
+
 def format_time(all_time):
     day = 24 * 60 * 60
     hour = 60 * 60
