@@ -1,7 +1,6 @@
 # -*- encoding=utf8 -*-
 __author__ = "Minni"
 
-import sys
 from airtest.core.api import *
 from poco.drivers.android.uiautomation import AndroidUiautomationPoco
 from base64 import b64decode
@@ -51,7 +50,6 @@ def scroll_list(goods_list):
     # 一种获取指定列的方法：list1 = [x[0] for x in mylist]
     # 获取商品列表中末尾项的左上角坐标，准备滚动到顶部
     print("本页扫描到%d个商品" % len(goods_object_list))
-    # print(goods_object_list)
     if len(goods_object_list) > 0:
         x, y = goods_object_list[-1].focus([0, 0]).get_position()
         scroll_to_top((x, y), top=0.15)
@@ -120,14 +118,16 @@ def get_detail_data():
                 if headers[TRADE_INFO]:  # 若存在但不是完整的在页面中，则滚动到顶部
                     name, pos, key_obj = headers[TRADE_INFO]
                     if not object_in_view(TRADE_INFO, pos):
+                        print("找到部分交易数据，翻动到顶部")
                         scroll_to_top(pos, top=0.2)
                     logger.info("读取交易信息")
                     trade_data = get_trade_info()
                     trade_info_checked = True
             if not seller_info_checked:
-                if headers[SELLER_INFO]:
+                if headers[SELLER_INFO]:  # 回传是否存在组件
                     name, pos, key_obj = headers[SELLER_INFO]
                     if not object_in_view(SELLER_INFO, pos):
+                        print("找到部分厂家数据，翻动到顶部")
                         scroll_to_top(pos, top=0.5)
                     logger.info("读取厂家信息")
                     seller_info = get_seller_info()
@@ -139,6 +139,7 @@ def get_detail_data():
             if (trade_info_checked is False) and (seller_info_checked is True):
                 break
             check_page_no += 1
+            # if (trade_info_checked is True) and (seller_info_checked is False):
             scroll_detail_page()  # 滚动一整页
 
         # 组合采集的数据
@@ -171,10 +172,15 @@ def get_detail_data():
 
 
 def scroll_detail_page():
-    poco.swipe([0, 0.9], [0, 0.2], duration=0.5)
+    print("翻动一整页")
+    poco.swipe([0, 0.9], [0, 0.2], duration=0.6)
 
 
 def find_key_info():
+    """
+    扫描屏幕内是否存在交易信息、厂家信息等组件
+    :return: 返回组件的名字、坐标、对象信息
+    """
     headers = {TRADE_INFO: False,
                SELLER_INFO: False}
 
@@ -192,6 +198,7 @@ def find_key_info():
         pos = seller_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
         key_object = seller_info_header  # 传递对象
         headers[SELLER_INFO] = (name, pos, key_object)
+    print(headers)
     return headers
 
 
@@ -433,7 +440,6 @@ def is_ending():
     try:
         ending_obj = poco(name="com.alibaba.wireless:id/center_text", text="没有更多数据了")
         if ending_obj.exists():
-            # print(ending_obj.get_text())
             return True
         else:
             return False

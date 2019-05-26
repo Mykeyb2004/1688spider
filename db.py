@@ -1,4 +1,5 @@
 import dataset
+import time
 
 db = dataset.connect('sqlite:///1688.db')
 table = db['origin']
@@ -30,6 +31,7 @@ def save_crawler(record, update=False):
     if update:
         print("已删除snapshot字段")
         del record['snapshot']
-
+    # 加入采集数据的时间
+    record['crawl_time'] = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
     table.upsert(record, ['share_text'])
     print("爬取数据已保存。")
