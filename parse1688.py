@@ -6,4 +6,4 @@ __author__ = "Minni"
 from parse import *
 
 if __name__ == '__main__':
-    parse()
+    print(parse_price(("¥12.00~¥17.00", "¥12", "¥18")))

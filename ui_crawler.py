@@ -77,7 +77,7 @@ def enter_detail_page(goods):
         get_detail_data()
         # 详情页中的返回按钮（返回至列表页）
         back_btn = poco("com.alibaba.wireless:id/v5_common_return")
-        back_btn.wait_for_appearance(5)
+        back_btn.wait_for_appearance(15)
         back_btn.click()
     except Exception as e:
         capture_error(e)
@@ -318,7 +318,7 @@ def get_share_text():
                 "android.webkit.WebView").child(
                 "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
                 type="android.widget.Image")
-        poco.wait_for_all(list(QR_obj))
+        poco.wait_for_all(list(QR_obj), timeout=10)
 
         # 点击“复制口令”按钮
         copy_btn = poco("android:id/content").child("android.widget.FrameLayout").offspring(

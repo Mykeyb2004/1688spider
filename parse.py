@@ -54,10 +54,19 @@ def parse_record(record):
 
 def parse_price(price):
     price1, price2, price3 = price
-    price1 = 10
-    price2 = 15
-    price3 = 20
-
+    # 处理如：¥12.00~¥17.00
+    price1 = price1.replace('¥', '')
+    position = price1.find('~')
+    if position > 0:
+        p1 = price1[0:position]
+        p2 = price1[(position + 1):-1]
+        price1 = float(p1)
+        price2 = float(p2)
+        price3 = None
+    else:
+        price1 = float(price1.replace('¥', ''))
+        price2 = float(price2.replace('¥', ''))
+        price3 = float(price3.replace('¥', ''))
     return price1, price2, price3
 
 
