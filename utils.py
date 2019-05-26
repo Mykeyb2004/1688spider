@@ -35,7 +35,6 @@ def init_crawler_record():
         "sign_respo": "",  # 响应符号
         "sign_delivery": "",  # 发货符号
         "title": ""  # 商品标题
-
     }
     return crawler_record
 

@@ -92,6 +92,7 @@ def get_detail_data():
     seller_info = ()
 
     try:
+
         product_object = poco("com.alibaba.wireless:id/tv_detail_subject")
         product = product_object.get_text()
         product = product.strip(' ')
@@ -100,9 +101,17 @@ def get_detail_data():
         price1, price2, price3 = get_price()
         logistics_city, logistics_price = get_logistics()
         share_text = get_share_text()
-        snapshot = get_goods_snapshot()
 
-        check_page_no = 0
+        # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
+        if not is_unique_title(product):
+            snap_filename = get_goods_snapshot()
+            update = False  # 保存到数据库时，不跳过保存该字段
+        else:
+            snap_filename = ''
+            print('已爬取数据，跳过截图步骤。')
+            update = True  # 保存到数据库时，跳过保存该字段
+
+        check_page_no = 0  # 详情页当前页面数
         trade_info_checked = False  # 保存是否扫描过交易信息
         seller_info_checked = False  # 保存是否扫描过厂家信息
         while check_page_no <= 2:  # 翻页3次扫描关键词
@@ -135,14 +144,13 @@ def get_detail_data():
         # 组合采集的数据
         crawler_record['title'] = product
         crawler_record['share_text'] = share_text
-        crawler_record['snapshot'] = snapshot
+        crawler_record['snapshot'] = snap_filename
         crawler_record['price1'] = price1
         crawler_record['price2'] = price2
         crawler_record['price3'] = price3
         crawler_record['logistics_city'] = logistics_city
         crawler_record['logistics_price'] = logistics_price
 
-        # crawler_record['trade_data'] = trade_data
         for i, trade in enumerate(trade_data):
             keyword = 'trade' + str(i + 1)
             crawler_record[keyword] = trade
@@ -157,7 +165,7 @@ def get_detail_data():
         if crawler_record['delivery'] is None:
             crawler_record['delivery'] = ''
 
-        save_crawler(crawler_record)
+        save_crawler(crawler_record, update=update)
     except Exception as e:
         capture_error(e)
 
@@ -187,7 +195,7 @@ def find_key_info():
     return headers
 
 
-def scroll_to_top(poco_xy, top=0.2, duration=0.3):
+def scroll_to_top(poco_xy, top=0.2, duration=0.5):
     # 把指定坐标滚动到目标位置
     x, y = poco_xy
     poco.swipe(poco_xy, [x, top], duration=duration)
@@ -249,19 +257,16 @@ def get_price():
         if price_object.exists():
             price = price_object.get_text()
             return price, "", ""
-        price_object = poco("com.alibaba.wireless:id/textView1")
-        if price_object.exists():
+        price_object1 = poco("com.alibaba.wireless:id/textView1")
+        if price_object1.exists():
             price_object2 = poco("com.alibaba.wireless:id/textView2")
             price_object3 = poco("com.alibaba.wireless:id/textView3")
-            price1 = price_object.get_text()
+            price1 = price_object1.get_text()
+            price = price1
             if price_object2.exists():
                 price2 = price_object2.get_text()
-            else:
-                price2 = price1
             if price_object3.exists():
                 price3 = price_object3.get_text()
-            else:
-                price3 = price2
     except Exception as e:
         capture_error(e)
     logger.info("已读取价格信息。")
@@ -370,16 +375,6 @@ def color_to_sign(image):
         return 1
     logger.warning("未识别红绿色color={}，可能为空".format(color))
     return 0
-    # 测试取色点周围颜色的相似度
-    # for xp in range(-3, 3):
-    #     for yp in range(-3, 3):
-    #         x_test, y_test = (x + xp), (y + yp)
-    #         color_test = image.getpixel((x_test, y_test))
-    #         similar_degree = color_similar_degree(color_test, (255, 13, 30))
-    #         print("x,y:%s color:%s similar:%d" % ((x_test, y_test), color_test, similar_degree))
-    # 观测像素坐标的测试代码
-    # image.putpixel(pixel_xy, (0, 0, 0))
-    # image.save('aa.jpg', image.format)
 
 
 def get_goods_snapshot():
@@ -460,11 +455,6 @@ def capture_error(msg):
     logger.error("Error captured, Message:[{}], snapshot={}".format(msg, filename))
 
 
-# def snapshot_log():
-#     filename = "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-#     snapshot(filename)
-
-
 def object_in_view(_object, pos):
     if _object == TRADE_INFO:
         x, y = pos
@@ -477,29 +467,3 @@ def object_in_view(_object, pos):
     else:
         logger.error("未识别的组件对象(object_in_view)")
     return False
-
-# @time_log
-# def which_page():
-#     view_obj = poco(name='com.alibaba.wireless:id/v8_search_bar_layout_iv')
-#     if view_obj.exists():
-#         return LIST_PAGE
-#     view_obj = poco(name='com.alibaba.wireless:id/search_navigator_scan')
-#     if view_obj.exists():
-#         return HOME_PAGE
-#     view_obj = poco(name='com.alibaba.wireless:id/v5_search_input_image')
-#     if view_obj.exists():
-#         return SEARCH_PAGE
-#     view_obj = poco(name='com.alibaba.wireless:id/title_bar_menu_1')
-#     if view_obj.exists():
-#         return DETAIL_PAGE
-#     return None
-
-# def get_rating_scores():
-#     try:
-#         rating_object = poco("com.alibaba.wireless:id/qx_comment_rating_score_txt")
-#         if rating_object.exists():
-#             print(rating_object.get_text())
-#         else:
-#             print("无评价记录")
-#     except Exception as e:
-#        capture_error(e)

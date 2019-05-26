@@ -1,8 +1,7 @@
 import dataset
 
-TABLE = 'origin'
 db = dataset.connect('sqlite:///1688.db')
-table = db[TABLE]
+table = db['origin']
 
 
 def is_unique_title(text):
@@ -26,9 +25,11 @@ def save_crawler(record, update=False):
     #     with db as tx:
     #         tx['origin'].update(record, ['share_text'])
     #     print("Update Datas.")
-    try:
-        with db as tx:
-            tx[TABLE].upsert(record, ['share_text'])
-        print("爬取数据已保存。")
-    except Exception as e:
-        print(e)
+
+    # 如果是更新数据，则需将截图文件名的这个字段删除掉，以保证不会传入一个空值覆盖原数据，
+    if update:
+        print("已删除snapshot字段")
+        del record['snapshot']
+
+    table.upsert(record, ['share_text'])
+    print("爬取数据已保存。")

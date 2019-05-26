@@ -1,0 +1,40 @@
+# @time_log
+# def which_page():
+#     view_obj = poco(name='com.alibaba.wireless:id/v8_search_bar_layout_iv')
+#     if view_obj.exists():
+#         return LIST_PAGE
+#     view_obj = poco(name='com.alibaba.wireless:id/search_navigator_scan')
+#     if view_obj.exists():
+#         return HOME_PAGE
+#     view_obj = poco(name='com.alibaba.wireless:id/v5_search_input_image')
+#     if view_obj.exists():
+#         return SEARCH_PAGE
+#     view_obj = poco(name='com.alibaba.wireless:id/title_bar_menu_1')
+#     if view_obj.exists():
+#         return DETAIL_PAGE
+#     return None
+
+# def get_rating_scores():
+#     try:
+#         rating_object = poco("com.alibaba.wireless:id/qx_comment_rating_score_txt")
+#         if rating_object.exists():
+#             print(rating_object.get_text())
+#         else:
+#             print("无评价记录")
+#     except Exception as e:
+#        capture_error(e)
+
+# def snapshot_log():
+#     filename = "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
+#     snapshot(filename)
+
+# 测试取色点周围颜色的相似度
+# for xp in range(-3, 3):
+#     for yp in range(-3, 3):
+#         x_test, y_test = (x + xp), (y + yp)
+#         color_test = image.getpixel((x_test, y_test))
+#         similar_degree = color_similar_degree(color_test, (255, 13, 30))
+#         print("x,y:%s color:%s similar:%d" % ((x_test, y_test), color_test, similar_degree))
+# 观测像素坐标的测试代码
+# image.putpixel(pixel_xy, (0, 0, 0))
+# image.save('aa.jpg', image.format)
