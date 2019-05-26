@@ -120,9 +120,23 @@ def get_detail_data():
                     if not object_in_view(TRADE_INFO, pos):
                         print("找到部分交易数据，翻动到顶部")
                         scroll_to_top(pos, top=0.2)
+                        sleep(0.5)  # 滑动后需要暂停，否则无法按到按钮
                     logger.info("读取交易信息")
+
+                    # 点击查看交易数据详情的右边按钮
+                    show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
+                    # show_btn.wait_for_appearance(2)
+                    print("点击并打开详细交易信息")
+                    show_btn.click()
+
                     trade_data = get_trade_info()
+
+                    # 点击交易数据详情退出按钮
+                    quit_btn = poco("com.alibaba.wireless:id/btn_board")
+                    quit_btn.click()
+
                     trade_info_checked = True
+            headers = find_key_info()
             if not seller_info_checked:
                 if headers[SELLER_INFO]:  # 回传是否存在组件
                     name, pos, key_obj = headers[SELLER_INFO]
@@ -172,7 +186,6 @@ def get_detail_data():
 
 
 def scroll_detail_page():
-    print("翻动一整页")
     poco.swipe([0, 0.9], [0, 0.2], duration=0.6)
 
 
@@ -198,7 +211,7 @@ def find_key_info():
         pos = seller_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
         key_object = seller_info_header  # 传递对象
         headers[SELLER_INFO] = (name, pos, key_object)
-    print(headers)
+    # print(headers)
     return headers
 
 
@@ -211,10 +224,6 @@ def scroll_to_top(poco_xy, top=0.2, duration=0.5):
 def get_trade_info():
     trade_data = []
     try:
-        # 点击查看交易数据详情的右边按钮
-        show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
-        show_btn.click()
-
         # 读取交易数据
         msg1 = poco("com.alibaba.wireless:id/lv_board").offspring("com.alibaba.wireless:id/title")
         for x in msg1:
@@ -222,9 +231,6 @@ def get_trade_info():
         msg2 = poco("com.alibaba.wireless:id/lv_board").offspring("com.alibaba.wireless:id/subTitle")
         for x in msg2:
             trade_data.append(x.get_text())
-        # 点击交易数据详情退出按钮
-        quit_btn = poco("com.alibaba.wireless:id/btn_board")
-        quit_btn.click()
     except Exception as e:
         capture_error(e)
     return trade_data

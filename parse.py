@@ -66,8 +66,6 @@ def parse_trade_info():
 
 
 def parse():
-    # with db as tx:
-    #     results = tx[SOURCE].all()
     results = source_table.all()
     print("载入数据。")
     for record in results:

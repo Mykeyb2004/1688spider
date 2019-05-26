@@ -29,7 +29,7 @@ def save_crawler(record, update=False):
 
     # 如果是更新数据，则需将截图文件名的这个字段删除掉，以保证不会传入一个空值覆盖原数据，
     if update:
-        print("已删除snapshot字段")
+        # print("已删除snapshot字段")
         del record['snapshot']
     # 加入采集数据的时间
     record['crawl_time'] = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
