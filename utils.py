@@ -7,8 +7,8 @@ import time
 from logfile import logger
 
 
-def init_table():
-    table = {
+def init_crawler_record():
+    crawler_record = {
         "share_text": "",  # 分享口令
         "snapshot": "",  # 产品截图文件名
         "price1": "",  # 价格1
@@ -16,7 +16,14 @@ def init_table():
         "price3": "",  # 价格3
         "logistics_city": "",  # 物流城市
         "logistics_price": "",  # 物流价格
-        "trade_data": [],  # 交易数据数组
+        "trade1": "",  # 交易数据
+        "trade2": "",  # 交易数据
+        "trade3": "",  # 交易数据
+        "trade4": "",  # 交易数据
+        "trade5": "",  # 交易数据
+        "trade6": "",  # 交易数据
+        "trade7": "",  # 交易数据
+        "trade8": "",  # 交易数据
         "company": "",  # 公司名
         "years": "",  # 成立年限
         "back_rate": "",  # 回头率
@@ -24,12 +31,13 @@ def init_table():
         "desc": "",  # 货描
         "respo": "",  # 响应
         "delivery": "",  # 发货
-        "sign_desc": 0,  # 货描符号
-        "sign_respo": 0,  # 响应符号
-        "sign_delivery": 0  # 发货符号
+        "sign_desc": "",  # 货描符号
+        "sign_respo": "",  # 响应符号
+        "sign_delivery": "",  # 发货符号
+        "title": ""  # 商品标题
 
     }
-    return table
+    return crawler_record
 
 
 def format_time(all_time):
@@ -69,15 +77,6 @@ def time_log(func):
     return wrapper
 
 
-@time_log
-def now(hint):
-    t = 0
-    for i in range(10000000):
-        t += 1
-    print(hint, t)
-    return 'OK'
-
-
 # execute command, and return the output
 def exec_cmd(cmd):
     text = subprocess.check_output(cmd)
@@ -87,23 +86,22 @@ def exec_cmd(cmd):
 def parse_outpost(outpost):
     if outpost:
         start_flag = '"'  # 首个引号为开始截取字符位置
-        start_postion = outpost.find(start_flag)
-        outpost = outpost[start_postion + 1:-3]
+        start_position = outpost.find(start_flag)
+        outpost = outpost[start_position + 1:-3]
     else:
         outpost = "Not Matched"
         return outpost
     return outpost
 
 
-def save_list(filename, text, list):
+def save_list(filename, text, vlist):
     with open(filename, "a+", encoding="utf-8") as file:
-        if (text + '\n') not in list:
+        if (text + '\n') not in vlist:
             file.writelines(text + '\n')
-            list.append(text)
+            vlist.append(text)
         else:
             print("[信息] 重复记录，已跳过。")
-    return list
-    # file.writelines([str(x) + "\n" for x in text])
+    return vlist
 
 
 def load_list(filename):
@@ -112,8 +110,8 @@ def load_list(filename):
         return []
 
     with open(filename, "r", encoding="utf-8") as file:
-        list = file.readlines()
-    return list
+        vlist = file.readlines()
+    return vlist
 
 
 def color_similar_degree(rgb1, rgb2):

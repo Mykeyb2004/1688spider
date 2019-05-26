@@ -3,8 +3,6 @@
 
 __author__ = "Minni"
 
-from utils import *
-from config import *
 from ui_crawler import *
 
 if __name__ == '__main__':

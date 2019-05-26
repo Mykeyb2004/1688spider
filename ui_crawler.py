@@ -3,8 +3,6 @@ __author__ = "Minni"
 
 import sys
 from airtest.core.api import *
-# from poco.exceptions import PocoTargetRemovedException, PocoNoSuchNodeException, PocoNoSuchNodeException, \
-#     InvalidOperationException, PocoTargetTimeout
 from poco.drivers.android.uiautomation import AndroidUiautomationPoco
 from base64 import b64decode
 from PIL import Image
@@ -12,14 +10,15 @@ from PIL import Image
 from config import *
 from utils import *
 from logfile import logger
+from db import *
 
 auto_setup(__file__)
 poco = AndroidUiautomationPoco(use_airtest_input=True, screenshot_each_action=False)
 
-LIST_PAGE = 'list'
-HOME_PAGE = 'home'
-SEARCH_PAGE = 'search'
-DETAIL_PAGE = 'detail'
+# LIST_PAGE = 'list'
+# HOME_PAGE = 'home'
+# SEARCH_PAGE = 'search'
+# DETAIL_PAGE = 'detail'
 
 PRICE_HEADER = 'price'
 TRADE_INFO = 'trade_info_header'
@@ -66,7 +65,7 @@ def walk_current_page(last_titles, goods_list):
     titles, goods = goods_list
     old_titles = []
     for i, title in enumerate(titles):
-        if title not in last_titles:
+        if title not in last_titles:  # 不重复爬取上个页面中已爬取过的标题
             enter_detail_page(goods[i])
             old_titles.append(title)
     return old_titles
@@ -88,7 +87,7 @@ def enter_detail_page(goods):
 
 @time_log
 def get_detail_data():
-    table = init_table()
+    crawler_record = init_crawler_record()
     trade_data = []
     seller_info = ()
 
@@ -112,7 +111,7 @@ def get_detail_data():
                 if headers[TRADE_INFO]:  # 若存在但不是完整的在页面中，则滚动到顶部
                     name, pos, key_obj = headers[TRADE_INFO]
                     if not object_in_view(TRADE_INFO, pos):
-                        scroll_to_top(pos)
+                        scroll_to_top(pos, top=0.2)
                     logger.info("读取交易信息")
                     trade_data = get_trade_info()
                     trade_info_checked = True
@@ -120,7 +119,7 @@ def get_detail_data():
                 if headers[SELLER_INFO]:
                     name, pos, key_obj = headers[SELLER_INFO]
                     if not object_in_view(SELLER_INFO, pos):
-                        scroll_to_top(pos)
+                        scroll_to_top(pos, top=0.5)
                     logger.info("读取厂家信息")
                     seller_info = get_seller_info()
                     seller_info_checked = True
@@ -134,24 +133,31 @@ def get_detail_data():
             scroll_detail_page()  # 滚动一整页
 
         # 组合采集的数据
-        table['share_text'] = share_text
-        table['snapshot'] = snapshot
-        table['price1'] = price1
-        table['price2'] = price2
-        table['price3'] = price3
-        table['logistics_city'] = logistics_city
-        table['logistics_price'] = logistics_price
-        table['trade_data'] = trade_data
-        table['company'], table['years'], table['back_rate'], table['buyer'], table['desc'], table['respo'], table \
-            ['delivery'], table['sign_desc'], table['sign_respo'], table['sign_delivery'] = seller_info
-        if table['desc'] is None:
-            table['desc'] = 0
-        if table['respo'] is None:
-            table['respo'] = 0
-        if table['delivery'] is None:
-            table['delivery'] = 0
+        crawler_record['title'] = product
+        crawler_record['share_text'] = share_text
+        crawler_record['snapshot'] = snapshot
+        crawler_record['price1'] = price1
+        crawler_record['price2'] = price2
+        crawler_record['price3'] = price3
+        crawler_record['logistics_city'] = logistics_city
+        crawler_record['logistics_price'] = logistics_price
 
-        print(table)
+        # crawler_record['trade_data'] = trade_data
+        for i, trade in enumerate(trade_data):
+            keyword = 'trade' + str(i + 1)
+            crawler_record[keyword] = trade
+
+        crawler_record['company'], crawler_record['years'], crawler_record['back_rate'], crawler_record['buyer'], \
+        crawler_record['desc'], crawler_record['respo'], crawler_record['delivery'], crawler_record['sign_desc'], \
+        crawler_record['sign_respo'], crawler_record['sign_delivery'] = seller_info
+        if crawler_record['desc'] is None:
+            crawler_record['desc'] = ''
+        if crawler_record['respo'] is None:
+            crawler_record['respo'] = ''
+        if crawler_record['delivery'] is None:
+            crawler_record['delivery'] = ''
+
+        save_crawler(crawler_record)
     except Exception as e:
         capture_error(e)
 
@@ -210,7 +216,7 @@ def get_trade_info():
 
 
 def get_seller_info():
-    company_object = poco("com.alibaba.wireless:id/title")
+    company_object = poco("com.alibaba.wireless:id/title")[-1]  # 因为有多个相同的标识，其中最后一个可能是公司名
     years_object = poco("com.alibaba.wireless:id/tv_tp_years")
     back_rate_object = poco("com.alibaba.wireless:id/back_rate")
     buyer_object = poco("com.alibaba.wireless:id/buyer")
@@ -307,7 +313,6 @@ def get_share_text():
         # 通过adb读取剪贴板中的分享口令
         output = exec_cmd(adb_get_clipboard)
         share_text = parse_outpost(output)
-        # logger.info("分享口令%s" % share_text)
         logger.info("读取分享口令")
     except Exception as e:
         capture_error(e)
@@ -350,11 +355,10 @@ def color_to_sign(image):
     :param image: PIL.Image对象
     :return: 正负号。若无法辨识是红色还是绿色，则返回0
     """
-    # 红绿色的比照基准坐标
+    # 红绿色比照的基准坐标
     pixel_xy = (59, 12)
     color = image.getpixel(pixel_xy)
-
-    # 红绿色的比照基准值
+    # 红绿色比照的基准rgb值
     green_arrow = (24, 185, 47)
     red_arrow = (255, 13, 30)
     # print("Green similar:", color_similar_degree(color, green_arrow))
@@ -386,11 +390,10 @@ def get_goods_snapshot():
     path = r'%s\%s' % (sys.path[0], 'snap')
     mkdir(path)
     filename = path + r"\snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    # print(filename)
     goods_snapshot = poco("com.alibaba.wireless:id/image")
     goods_snapshot.wait_for_appearance(5)
-    element_snapshot(goods_snapshot, save=True, filename=filename, width=480)
-    return filename
+    element_snapshot(goods_snapshot, save=True, filename=filename, width=380)
+    return "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
 
 
 def element_snapshot(poco_object, save=False, filename="ele", width=720):
@@ -454,7 +457,7 @@ def snapshot(filename, subdirectory='snap'):
 def capture_error(msg):
     filename = "error" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
     snapshot(filename, "error")
-    logger.error("Error captured, snapshot =%s".format(msg, filename))
+    logger.error("Error captured, Message:[{}], snapshot={}".format(msg, filename))
 
 
 # def snapshot_log():

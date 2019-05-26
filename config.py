@@ -1,23 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
-# import logging
-
-
-# 记录程序起始时间
-start_time = 0
-# 上翻屏幕的距离
-scroll_percent = 0.7
-# 上翻屏幕的滑动时间
-scroll_duration = 0.4
-# 翻页间隔时间
-scroll_time = 3
+import sys
 
 # 执行adb获取手机剪贴板命令
-adb_get_clipboard = r"D:\python\airtest\venv\lib\site-packages\airtest\core\android\static\adb\windows\adb.exe -s e38c54e3 shell am broadcast -a clipper.get"
+adb_get_clipboard = r"{}\{}\adb.exe -s e38c54e3 shell am broadcast -a clipper.get".format(sys.path[0], "adb")
 # 启动手机app——clipper命令
-adb_run_clipper = r"D:\python\airtest\venv\lib\site-packages\airtest\core\android\static\adb\windows\adb.exe -s e38c54e3 shell am startservice ca.zgrs.clipper/.ClipboardService"
-
-# 保存数据的文件名
-DB = "list.txt"
+adb_run_clipper = r"{}\{}\adb.exe -s e38c54e3 shell am startservice ca.zgrs.clipper/.ClipboardService".format(
+    sys.path[0], "adb")
 # 最短采集商品标题
 SHORTEST_TITLE_LEN = 7
+# 是否以更新的方式保存爬取数据
+UPDATE = False
