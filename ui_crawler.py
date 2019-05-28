@@ -14,11 +14,6 @@ from db import *
 auto_setup(__file__)
 poco = AndroidUiautomationPoco(use_airtest_input=True, screenshot_each_action=False)
 
-# LIST_PAGE = 'list'
-# HOME_PAGE = 'home'
-# SEARCH_PAGE = 'search'
-# DETAIL_PAGE = 'detail'
-
 PRICE_HEADER = 'price'
 TRADE_INFO = 'trade_info_header'
 RATING_HEADER = 'rating_header'
@@ -26,6 +21,22 @@ SELLER_INFO = 'seller_info_header'
 
 
 def crawler():
+    config = load_config('config.json')
+    base_dir = config['dir']
+    keyword = config['keyword']
+    snap_dir = base_dir + keyword
+    db_name = keyword + '.db'
+    global SNAP_PATH
+    SNAP_PATH = snap_dir
+
+    print("扫描关键词 = %s" % keyword)
+    print("数据储存目录 = %s" % base_dir)
+    print("截图储存目录 = %s" % snap_dir)
+    print("数据库文件名 = %s" % db_name)
+    mkdir(base_dir)
+    global TABLE
+    TABLE = load_table(base_dir + db_name)
+
     # 保存当前页商品标题，以备查重用。
     current_titles = []
     while True:
@@ -80,6 +91,7 @@ def enter_detail_page(goods):
         back_btn.click()
     except Exception as e:
         capture_error(e)
+        print("enter_detail_page")
 
 
 @time_log
@@ -89,7 +101,6 @@ def get_detail_data():
     seller_info = ()
 
     try:
-
         product_object = poco("com.alibaba.wireless:id/tv_detail_subject")
         product = product_object.get_text()
         product = product.strip(' ')
@@ -98,17 +109,14 @@ def get_detail_data():
         price1, price2, price3 = get_price()
         logistics_city, logistics_price = get_logistics()
         share_text = get_share_text()
-
         # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
-        if not is_unique_title(product):
-            snap_filename = get_goods_snapshot()
-            print('新爬取的数据，保存其截图。')
+        if not is_unique_title(product, TABLE):
+            snap_filename = get_goods_snapshot(SNAP_PATH)
+            print('保存商品截图。')
             update = False  # 保存到数据库时，不跳过保存该字段
         else:
-            snap_filename = ''
             print('已爬取数据，跳过截图步骤。')
             update = True  # 保存到数据库时，跳过保存该字段
-
         check_page_no = 0  # 详情页当前页面数
         trade_info_checked = False  # 保存是否扫描过交易信息
         seller_info_checked = False  # 保存是否扫描过厂家信息
@@ -125,12 +133,9 @@ def get_detail_data():
 
                     # 点击查看交易数据详情的右边按钮
                     show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
-                    # show_btn.wait_for_appearance(2)
-                    print("点击并打开详细交易信息")
+                    # print("点击并打开详细交易信息")
                     show_btn.click()
-
                     trade_data = get_trade_info()
-
                     # 点击交易数据详情退出按钮
                     quit_btn = poco("com.alibaba.wireless:id/btn_board")
                     quit_btn.click()
@@ -141,8 +146,8 @@ def get_detail_data():
                 if headers[SELLER_INFO]:  # 回传是否存在组件
                     name, pos, key_obj = headers[SELLER_INFO]
                     if not object_in_view(SELLER_INFO, pos):
-                        print("找到部分厂家数据，翻动到顶部")
-                        scroll_to_top(pos, top=0.5)
+                        # print("找到部分厂家数据，翻动到顶部")
+                        scroll_to_top(pos, top=0.3)
                     logger.info("读取厂家信息")
                     seller_info = get_seller_info()
                     seller_info_checked = True
@@ -180,9 +185,10 @@ def get_detail_data():
         if crawler_record['delivery'] is None:
             crawler_record['delivery'] = ''
 
-        save_crawler(crawler_record, update=update)
+        save_crawler(crawler_record, TABLE, update=update)
     except Exception as e:
         capture_error(e)
+        print("get_detail_data")
 
 
 def scroll_detail_page():
@@ -233,6 +239,7 @@ def get_trade_info():
             trade_data.append(x.get_text())
     except Exception as e:
         capture_error(e)
+        print("get_trade_info")
     return trade_data
 
 
@@ -282,6 +289,7 @@ def get_price():
                 price3 = price_object3.get_text()
     except Exception as e:
         capture_error(e)
+        print("get_price")
     logger.info("已读取价格信息。")
     return price, price2, price3
 
@@ -303,6 +311,7 @@ def get_logistics():
         return logistics_city, logistics_price
     except Exception as e:
         capture_error(e)
+        print("get_logistics")
 
 
 def get_share_text():
@@ -334,6 +343,7 @@ def get_share_text():
         logger.info("读取分享口令")
     except Exception as e:
         capture_error(e)
+        print("get_share_text")
     return share_text
 
 
@@ -390,12 +400,12 @@ def color_to_sign(image):
     return 0
 
 
-def get_goods_snapshot():
+def get_goods_snapshot(path):
     """
     保存商品图片
     :return: 返回保存的文件名
     """
-    path = r'%s\%s' % (sys.path[0], 'snap')
+    # path = r'%s\%s' % (sys.path[0], 'snap')
     mkdir(path)
     filename = path + r"\snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
     goods_snapshot = poco("com.alibaba.wireless:id/image")
@@ -451,6 +461,7 @@ def is_ending():
             return False
     except Exception as e:
         capture_error(e)
+        print("is_ending")
     return False
 
 

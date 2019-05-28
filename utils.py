@@ -4,37 +4,38 @@ import os
 import functools
 import math
 import time
+import json
 from logfile import logger
 
 
 def init_crawler_record():
     crawler_record = {
-        "share_text": "",  # 分享口令
-        "snapshot": "",  # 产品截图文件名
-        "price1": "",  # 价格1
-        "price2": "",  # 价格2
-        "price3": "",  # 价格3
-        "logistics_city": "",  # 物流城市
-        "logistics_price": "",  # 物流价格
-        "trade1": "",  # 交易数据
-        "trade2": "",  # 交易数据
-        "trade3": "",  # 交易数据
-        "trade4": "",  # 交易数据
-        "trade5": "",  # 交易数据
-        "trade6": "",  # 交易数据
-        "trade7": "",  # 交易数据
-        "trade8": "",  # 交易数据
-        "company": "",  # 公司名
-        "years": "",  # 成立年限
-        "back_rate": "",  # 回头率
-        "buyer": "",  # 90天内买家
-        "desc": "",  # 货描
-        "respo": "",  # 响应
-        "delivery": "",  # 发货
-        "sign_desc": "",  # 货描符号
-        "sign_respo": "",  # 响应符号
-        "sign_delivery": "",  # 发货符号
-        "title": ""  # 商品标题
+        "share_text": None,  # 分享口令
+        "snapshot": None,  # 产品截图文件名
+        "price1": None,  # 价格1
+        "price2": None,  # 价格2
+        "price3": None,  # 价格3
+        "logistics_city": None,  # 物流城市
+        "logistics_price": None,  # 物流价格
+        "trade1": None,  # 交易数据
+        "trade2": None,  # 交易数据
+        "trade3": None,  # 交易数据
+        "trade4": None,  # 交易数据
+        "trade5": None,  # 交易数据
+        "trade6": None,  # 交易数据
+        "trade7": None,  # 交易数据
+        "trade8": None,  # 交易数据
+        "company": None,  # 公司名
+        "years": None,  # 成立年限
+        "back_rate": None,  # 回头率
+        "buyer": None,  # 90天内买家
+        "desc": None,  # 货描
+        "respo": None,  # 响应
+        "delivery": None,  # 发货
+        "sign_desc": None,  # 货描符号
+        "sign_respo": None,  # 响应符号
+        "sign_delivery": None,  # 发货符号
+        "title": None  # 商品标题
     }
     return crawler_record
 
@@ -125,3 +126,13 @@ def mkdir(path):
         # 如果目录存在则不创建，并提示目录已存在
         # print(path + ' 目录已存在')
         return False
+
+
+def load_config(filename):
+    """
+    载入配置文件（JSON格式）
+    :param filename: 文件路径和文件名
+    :return: 配置参数的数组
+    """
+    config = json.load(open(filename, encoding='UTF-8'))
+    return config

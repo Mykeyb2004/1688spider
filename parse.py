@@ -3,24 +3,38 @@ import re
 from utils import *
 from progressbar import *
 
-db = dataset.connect('sqlite:///1688.db')
 target_db = dataset.connect('sqlite:///parsed1688.db')
-# 数据表
-source_table = db['origin']
 target_table = target_db['parse']
 
 
-def get_fields():
-    return source_table.columns
+def parse():
+    config = load_config('config.json')
+    source_dir = config['dir']
+    keyword = config['keyword']
+
+    source_db = dataset.connect('sqlite:///' + source_dir + keyword + '.db')
+    source_table = source_db['origin']
+
+    results = source_table.all()
+    total = source_table.count()
+    fields = get_fields(source_table)
+
+    print("载入数据...")
+    pbar = ProgressBar().start()
+    for i, record in enumerate(results):
+        pbar.update(int((i / (total - 1)) * 100))
+        save_parsed_record(record, keyword, fields)
+    pbar.finish()
 
 
-def save_parsed_record(record, keyword):
+def save_parsed_record(record, keyword, fields):
     """
-    解析原始数据记录
-    :param record:
-    :return:
+    解析原始数据记录，保存到新的数据表中
+    :param record: 传入的原数据结构
+    :param keyword: 搜索的关键词
+    :param fields: 字段列表
+    :return: 无返回
     """
-    fields = get_fields()
     crawler = {}
     # 将一条记录的所有字段读入dict对象
     for field in fields:
@@ -101,9 +115,10 @@ def parse_price(price1_string, price2_string, price3_string):
 
     def price_to_list(item):
         vlist = []
-        if item == '':
+        if item == '' or item is None:
             return []
         item = item.replace('¥', '')
+        item = item.replace('-', '~')  # 替换掉不规则的连接符合
         position = item.find('~')
         if position > 0:
             p1 = re.findall(r"\d+\.?\d*", item)[0]
@@ -167,6 +182,8 @@ def parse_trade_info(trade_info_list):
     # 一件成交0.00% one_order
     trade_info = {}
     for item in trade_info_list:
+        if item is None:
+            break
         if item.startswith('近30天成交'):
             string = re.findall('\d+', item)[-1]
             trade_info['orders_30'] = float(string)
@@ -198,18 +215,6 @@ def parse_number(item):
     return float(digital[0])
 
 
-def parse(keyword):
-    results = source_table.all()
-    total = source_table.count()
-
-    print("载入数据。")
-    pbar = ProgressBar().start()
-    for i, record in enumerate(results):
-        pbar.update(int((i / (total - 1)) * 100))
-        save_parsed_record(record, keyword)
-    pbar.finish()
-
-
 def parse_share_text(text):
     if not text:
         return [], []
@@ -226,3 +231,7 @@ def parse_share_text(text):
     url = url[:46]
 
     return title, url
+
+
+def get_fields(table):
+    return table.columns

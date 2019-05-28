@@ -11,3 +11,10 @@ adb_run_clipper = r"{}\{}\adb.exe -s e38c54e3 shell am startservice ca.zgrs.clip
 SHORTEST_TITLE_LEN = 7
 # 是否以更新的方式保存爬取数据
 UPDATE = False
+
+# 截图文件保存路径
+SNAP_PATH = ''
+# 保存采集数据的table对象
+TABLE = None
+# 累计保存记录条数
+TOTAL_RECORDS = 0
