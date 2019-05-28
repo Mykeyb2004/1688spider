@@ -66,7 +66,7 @@ def time_log(func):
     @functools.wraps(func)
     def wrapper(*args, **kw):
         start_time = time.time()
-        logger.info('调用函数 = %s()' % func.__name__)
+        # logger.info('调用函数 = %s()' % func.__name__)
         result = func(*args, **kw)
         elapsed_time = time.time() - start_time
         logger.info("页面读取数据耗时 = %s" % format_time(elapsed_time))
@@ -91,26 +91,6 @@ def parse_outpost(outpost):
         outpost = "Not Matched"
         return outpost
     return outpost
-
-
-def save_list(filename, text, vlist):
-    with open(filename, "a+", encoding="utf-8") as file:
-        if (text + '\n') not in vlist:
-            file.writelines(text + '\n')
-            vlist.append(text)
-        else:
-            print("[信息] 重复记录，已跳过。")
-    return vlist
-
-
-def load_list(filename):
-    # 文件不存在则返回空list
-    if not os.path.exists(filename):
-        return []
-
-    with open(filename, "r", encoding="utf-8") as file:
-        vlist = file.readlines()
-    return vlist
 
 
 def color_similar_degree(rgb1, rgb2):

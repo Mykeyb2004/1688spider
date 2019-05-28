@@ -38,3 +38,22 @@
 # 观测像素坐标的测试代码
 # image.putpixel(pixel_xy, (0, 0, 0))
 # image.save('aa.jpg', image.format)
+
+def save_list(filename, text, vlist):
+    with open(filename, "a+", encoding="utf-8") as file:
+        if (text + '\n') not in vlist:
+            file.writelines(text + '\n')
+            vlist.append(text)
+        else:
+            print("[信息] 重复记录，已跳过。")
+    return vlist
+
+
+def load_list(filename):
+    # 文件不存在则返回空list
+    if not os.path.exists(filename):
+        return []
+
+    with open(filename, "r", encoding="utf-8") as file:
+        vlist = file.readlines()
+    return vlist

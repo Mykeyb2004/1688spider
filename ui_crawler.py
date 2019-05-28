@@ -47,7 +47,6 @@ def crawler():
 def scroll_list(goods_list):
     # 获取商品列表，结构如下
     titles, goods_object_list = goods_list
-    # 一种获取指定列的方法：list1 = [x[0] for x in mylist]
     # 获取商品列表中末尾项的左上角坐标，准备滚动到顶部
     print("本页扫描到%d个商品" % len(goods_object_list))
     if len(goods_object_list) > 0:
@@ -61,7 +60,7 @@ def scroll_list(goods_list):
 
 def walk_current_page(last_titles, goods_list):
     titles, goods = goods_list
-    old_titles = []
+    old_titles = []  # 上一页扫描的商品标题
     for i, title in enumerate(titles):
         if title not in last_titles:  # 不重复爬取上个页面中已爬取过的标题
             enter_detail_page(goods[i])
@@ -103,6 +102,7 @@ def get_detail_data():
         # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
         if not is_unique_title(product):
             snap_filename = get_goods_snapshot()
+            print('新爬取的数据，保存其截图。')
             update = False  # 保存到数据库时，不跳过保存该字段
         else:
             snap_filename = ''
@@ -318,7 +318,7 @@ def get_share_text():
                 "android.webkit.WebView").child(
                 "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
                 type="android.widget.Image")
-        poco.wait_for_all(list(QR_obj), timeout=10)
+        poco.wait_for_all(list(QR_obj), timeout=20)
 
         # 点击“复制口令”按钮
         copy_btn = poco("android:id/content").child("android.widget.FrameLayout").offspring(
