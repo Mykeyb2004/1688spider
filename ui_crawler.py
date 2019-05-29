@@ -28,11 +28,14 @@ def crawler():
     db_name = keyword + '.db'
     global SNAP_PATH
     SNAP_PATH = snap_dir
+    global FORCE_UPDATE
+    FORCE_UPDATE = config['force_update']
 
     print("扫描关键词 = %s" % keyword)
     print("数据储存目录 = %s" % base_dir)
     print("截图储存目录 = %s" % snap_dir)
     print("数据库文件名 = %s" % db_name)
+    print("强制更新模式 = ", FORCE_UPDATE)
     mkdir(base_dir)
     global TABLE
     TABLE = load_table(base_dir + db_name)
@@ -74,7 +77,15 @@ def walk_current_page(last_titles, goods_list):
     old_titles = []  # 上一页扫描的商品标题
     for i, title in enumerate(titles):
         if title not in last_titles:  # 不重复爬取上个页面中已爬取过的标题
-            enter_detail_page(goods[i])
+            if FORCE_UPDATE:
+                # 无论之前数据库中是否存在该title，均扫描一遍以更新数据。
+                enter_detail_page(goods[i])
+            else:
+                # 如果数据库中存在标题，则跳过扫描
+                if not is_unique_title(title, TABLE):
+                    enter_detail_page(goods[i])
+                else:
+                    print("数据重复，跳过扫描")
             old_titles.append(title)
     return old_titles
 
@@ -328,7 +339,7 @@ def get_share_text():
                 "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
                 type="android.widget.Image")
         poco.wait_for_all(list(QR_obj), timeout=20)
-
+        sleep(0.3)
         # 点击“复制口令”按钮
         copy_btn = poco("android:id/content").child("android.widget.FrameLayout").offspring(
             "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(

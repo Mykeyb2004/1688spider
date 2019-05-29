@@ -18,3 +18,5 @@ SNAP_PATH = ''
 TABLE = None
 # 累计保存记录条数
 TOTAL_RECORDS = 0
+# 强制更新模式，表示不检查标题是否在数据库中，直接更新数据
+FORCE_UPDATE = False
