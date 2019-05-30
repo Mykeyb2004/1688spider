@@ -42,6 +42,7 @@ def crawler():
 
     # 保存当前页商品标题，以备查重用。
     current_titles = []
+    retry_times = 0
     while True:
         # 获取当前页面商品列表
         goods_list = get_current_page_objects()
@@ -53,8 +54,11 @@ def crawler():
             print("没有更多数据了。")
             break
         # 滚动列表页(滚动最后一项到顶部)
-        scroll_list(goods_list)
-
+        if not scroll_list(goods_list):
+            retry_times += 1
+        if retry_times > 4:
+            print("页面异常，退出本次采集。")
+            break
     print("Done!")
 
 
@@ -316,6 +320,9 @@ def get_share_text(title, table):
             "android.widget.LinearLayout").child(name="com.alibaba.wireless:id/item_name")
         copy_btn.wait_for_appearance()
         copy_btn.click()
+        # # 再点击一次，防止点击复制按钮失效
+        # if copy_btn.exists():
+        #     copy_btn.click()
 
         # 通过adb读取剪贴板中的分享口令
         output = exec_cmd(adb_get_clipboard)
