@@ -58,7 +58,10 @@ def crawler():
             retry_times += 1
         if retry_times > 4:
             print("页面异常，退出本次采集。")
-            break
+            keyevent("BACK")
+            sleep(1)
+            keyevent("BACK")
+            retry_times = 0
     print("Done!")
 
 
@@ -126,7 +129,7 @@ def get_detail_data():
         logistics_city, logistics_price = get_logistics()
 
         # 获取分享口令和商品截图
-        share_text, snap_filename = get_share_text(product, TABLE)
+        share_text, snap_filename = get_share_and_snap(product, TABLE)
         crawler_record['share_text'] = share_text
         if snap_filename is not None:
             crawler_record['snapshot'] = snap_filename
@@ -288,7 +291,7 @@ def get_logistics():
         print("get_logistics")
 
 
-def get_share_text(title, table):
+def get_share_and_snap(title, table):
     share_text = ''
     snap_filename = None
     try:
@@ -320,9 +323,6 @@ def get_share_text(title, table):
             "android.widget.LinearLayout").child(name="com.alibaba.wireless:id/item_name")
         copy_btn.wait_for_appearance()
         copy_btn.click()
-        # # 再点击一次，防止点击复制按钮失效
-        # if copy_btn.exists():
-        #     copy_btn.click()
 
         # 通过adb读取剪贴板中的分享口令
         output = exec_cmd(adb_get_clipboard)

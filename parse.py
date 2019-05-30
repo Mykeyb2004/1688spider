@@ -8,7 +8,7 @@ target_table = target_db['parse']
 
 
 def parse():
-    config = load_config('config.json')
+    config = load_config('parse.json')
     source_dir = config['dir']
     keyword = config['keyword']
 
