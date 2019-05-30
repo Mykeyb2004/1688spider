@@ -64,11 +64,23 @@ def is_unique_title(text, table):
         return False
 
 
-def save_crawler(record, table, update=False):
+def snap_exists(text, table):
+    row = table.find_one(title=text)
+
+    if not row:  # 查不到title记录，则为新爬取记录
+        return False
+    else:
+        print(text, "row=", row['snapshot'])
+        if row['snapshot']:  # 存在之前的截图文件名
+            return True
+        else:  # 之前没有截图名
+            return False
+
+
+def save_crawler(record, table):
     # 如果是更新数据，则需将截图文件名的这个字段删除掉，以保证不会传入一个空值覆盖原数据，
-    if update:
-        del record['snapshot']
+    # if update:
+    #     del record['snapshot']
     # 加入采集数据的时间
     record['crawl_time'] = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
     table.upsert(record, ['share_text'])
-    # print("爬取数据已保存。")

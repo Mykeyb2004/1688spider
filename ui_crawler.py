@@ -107,7 +107,8 @@ def enter_detail_page(goods):
 
 @time_log
 def get_detail_data():
-    crawler_record = init_crawler_record()
+    # crawler_record = init_crawler_record()
+    crawler_record = {}  # 初始化采集数据的dict对象
     trade_data = []
     seller_info = ()
 
@@ -119,15 +120,13 @@ def get_detail_data():
 
         price1, price2, price3 = get_price()
         logistics_city, logistics_price = get_logistics()
-        share_text = get_share_text()
-        # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
-        if not is_unique_title(product, TABLE):
-            crawler_record['snapshot'] = get_goods_snapshot(SNAP_PATH)
-            print('保存商品截图。')
-            update = False  # 保存到数据库时，不跳过保存该字段
-        else:
-            print('已爬取数据，跳过截图步骤。')
-            update = True  # 保存到数据库时，跳过保存该字段
+
+        # 获取分享口令和商品截图
+        share_text, snap_filename = get_share_text(product, TABLE)
+        crawler_record['share_text'] = share_text
+        if snap_filename is not None:
+            crawler_record['snapshot'] = snap_filename
+
         check_page_no = 0  # 详情页当前页面数
         trade_info_checked = False  # 保存是否扫描过交易信息
         seller_info_checked = False  # 保存是否扫描过厂家信息
@@ -141,15 +140,8 @@ def get_detail_data():
                         scroll_to_top(pos, top=0.2)
                         sleep(0.5)  # 滑动后需要暂停，否则无法按到按钮
                     logger.info("读取交易信息")
-
-                    # 点击查看交易数据详情的右边按钮
-                    show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
-                    show_btn.click()
+                    # 点击查看按钮，读取详细交易信息
                     trade_data = get_trade_info()
-                    # 点击交易数据详情退出按钮
-                    quit_btn = poco("com.alibaba.wireless:id/btn_board")
-                    quit_btn.click()
-
                     trade_info_checked = True
             headers = find_key_info()
             if not seller_info_checked:
@@ -167,7 +159,6 @@ def get_detail_data():
             if (trade_info_checked is False) and (seller_info_checked is True):
                 break
             check_page_no += 1
-            # if (trade_info_checked is True) and (seller_info_checked is False):
             scroll_detail_page()  # 滚动一整页
 
         # 组合采集的数据
@@ -179,65 +170,32 @@ def get_detail_data():
         crawler_record['price3'] = price3
         crawler_record['logistics_city'] = logistics_city
         crawler_record['logistics_price'] = logistics_price
-
+        # 保存交易信息的列表
         for i, trade in enumerate(trade_data):
-            keyword = 'trade' + str(i + 1)
-            crawler_record[keyword] = trade
-
+            trade_keyword = 'trade' + str(i + 1)
+            crawler_record[trade_keyword] = trade
+        # 解包已读取的厂家信息数据
         crawler_record['company'], crawler_record['years'], crawler_record['back_rate'], crawler_record['buyer'], \
         crawler_record['desc'], crawler_record['respo'], crawler_record['delivery'], crawler_record['sign_desc'], \
         crawler_record['sign_respo'], crawler_record['sign_delivery'] = seller_info
-        if crawler_record['desc'] is None:
-            crawler_record['desc'] = ''
-        if crawler_record['respo'] is None:
-            crawler_record['respo'] = ''
-        if crawler_record['delivery'] is None:
-            crawler_record['delivery'] = ''
-
-        save_crawler(crawler_record, TABLE, update=update)
+        # if crawler_record['desc'] is None:
+        #     crawler_record['desc'] = ''
+        # if crawler_record['respo'] is None:
+        #     crawler_record['respo'] = ''
+        # if crawler_record['delivery'] is None:
+        #     crawler_record['delivery'] = ''
+        save_crawler(crawler_record, TABLE)
     except Exception as e:
         capture_error(e)
         print("get_detail_data")
 
 
-def scroll_detail_page():
-    poco.swipe([0, 0.9], [0, 0.2], duration=0.6)
-
-
-def find_key_info():
-    """
-    扫描屏幕内是否存在交易信息、厂家信息等组件
-    :return: 返回组件的名字、坐标、对象信息
-    """
-    headers = {TRADE_INFO: False,
-               SELLER_INFO: False}
-
-    # 查找交易信息
-    trade_info_header = poco("com.alibaba.wireless:id/qx_trade_data_main_txt")
-    if trade_info_header.exists():
-        name = TRADE_INFO  # 信息对象名
-        pos = trade_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
-        key_object = trade_info_header  # 传递对象
-        headers[TRADE_INFO] = (name, pos, key_object)
-    # 查找厂家信息
-    seller_info_header = poco("com.alibaba.wireless:id/icon")
-    if seller_info_header.exists():
-        name = SELLER_INFO  # 信息对象名
-        pos = seller_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
-        key_object = seller_info_header  # 传递对象
-        headers[SELLER_INFO] = (name, pos, key_object)
-    # print(headers)
-    return headers
-
-
-def scroll_to_top(poco_xy, top=0.2, duration=0.5):
-    # 把指定坐标滚动到目标位置
-    x, y = poco_xy
-    poco.swipe(poco_xy, [x, top], duration=duration)
-
-
 def get_trade_info():
     trade_data = []
+
+    # 点击查看交易数据详情的右边按钮
+    show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
+    show_btn.click()
     try:
         # 读取交易数据
         msg1 = poco("com.alibaba.wireless:id/lv_board").offspring("com.alibaba.wireless:id/title")
@@ -249,6 +207,9 @@ def get_trade_info():
     except Exception as e:
         capture_error(e)
         print("get_trade_info")
+    # 点击交易数据详情退出按钮
+    quit_btn = poco("com.alibaba.wireless:id/btn_board")
+    quit_btn.click()
     return trade_data
 
 
@@ -323,9 +284,11 @@ def get_logistics():
         print("get_logistics")
 
 
-def get_share_text():
+def get_share_text(title, table):
     share_text = ''
+    snap_filename = None
     try:
+        # 点击分享按钮
         share_btn = poco("com.alibaba.wireless:id/iv_detail_shared")
         share_btn.wait_for_appearance(5)
         share_btn.click()
@@ -338,6 +301,14 @@ def get_share_text():
                 type="android.widget.Image")
         poco.wait_for_all(list(QR_obj), timeout=20)
         sleep(0.5)
+
+        # 截图
+        # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
+        if not snap_exists(title, table):
+            snap_filename = get_goods_snapshot(SNAP_PATH)
+        else:
+            snap_filename = None
+
         # 点击“复制口令”按钮
         copy_btn = poco("android:id/content").child("android.widget.FrameLayout").offspring(
             "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(
@@ -353,7 +324,8 @@ def get_share_text():
     except Exception as e:
         capture_error(e)
         print("get_share_text")
-    return share_text
+
+    return share_text, snap_filename
 
 
 def get_current_page_objects():
@@ -379,6 +351,42 @@ def get_current_page_objects():
                 goods_object_list.append(obj)
                 goods_title_list.append(title)
     return goods_title_list, goods_object_list
+
+
+def scroll_detail_page():
+    poco.swipe([0, 0.9], [0, 0.2], duration=0.6)
+
+
+def find_key_info():
+    """
+    扫描屏幕内是否存在交易信息、厂家信息等组件
+    :return: 返回组件的名字、坐标、对象信息
+    """
+    headers = {TRADE_INFO: False,
+               SELLER_INFO: False}
+
+    # 查找交易信息
+    trade_info_header = poco("com.alibaba.wireless:id/qx_trade_data_main_txt")
+    if trade_info_header.exists():
+        name = TRADE_INFO  # 信息对象名
+        pos = trade_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
+        key_object = trade_info_header  # 传递对象
+        headers[TRADE_INFO] = (name, pos, key_object)
+    # 查找厂家信息
+    seller_info_header = poco("com.alibaba.wireless:id/icon")
+    if seller_info_header.exists():
+        name = SELLER_INFO  # 信息对象名
+        pos = seller_info_header.focus([0, 0]).get_position()  # 对象左上角坐标信息
+        key_object = seller_info_header  # 传递对象
+        headers[SELLER_INFO] = (name, pos, key_object)
+    # print(headers)
+    return headers
+
+
+def scroll_to_top(poco_xy, top=0.2, duration=0.5):
+    # 把指定坐标滚动到目标位置
+    x, y = poco_xy
+    poco.swipe(poco_xy, [x, top], duration=duration)
 
 
 def plus_or_minus(poco_object):
@@ -417,7 +425,13 @@ def get_goods_snapshot(path):
     # path = r'%s\%s' % (sys.path[0], 'snap')
     mkdir(path)
     filename = path + r"\snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    goods_snapshot = poco("com.alibaba.wireless:id/image")
+    # goods_snapshot = poco("com.alibaba.wireless:id/image")
+    goods_snapshot = \
+        poco("android:id/content").child("android.widget.FrameLayout").offspring("android.webkit.WebView").child(
+            "android.view.View").child("android.view.View")[0]
+    if not goods_snapshot.exists():
+        print("未获取到商品分享口令的组件，无法截图。")
+        return None
     goods_snapshot.wait_for_appearance(5)
     element_snapshot(goods_snapshot, save=True, filename=filename, width=380)
     return "snapshot" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
