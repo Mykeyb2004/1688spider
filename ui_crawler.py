@@ -85,7 +85,7 @@ def walk_current_page(last_titles, goods_list):
                 if not is_unique_title(title, TABLE):
                     enter_detail_page(goods[i])
                 else:
-                    print("数据重复，跳过扫描")
+                    print("已扫描过该商品，跳过扫描")
             old_titles.append(title)
     return old_titles
 
@@ -122,7 +122,7 @@ def get_detail_data():
         share_text = get_share_text()
         # 若不在数据库中，则为新增爬取数据，需传递截图的文件名
         if not is_unique_title(product, TABLE):
-            snap_filename = get_goods_snapshot(SNAP_PATH)
+            crawler_record['snapshot'] = get_goods_snapshot(SNAP_PATH)
             print('保存商品截图。')
             update = False  # 保存到数据库时，不跳过保存该字段
         else:
@@ -144,7 +144,6 @@ def get_detail_data():
 
                     # 点击查看交易数据详情的右边按钮
                     show_btn = poco("com.alibaba.wireless:id/qx_right_arrow")
-                    # print("点击并打开详细交易信息")
                     show_btn.click()
                     trade_data = get_trade_info()
                     # 点击交易数据详情退出按钮
@@ -157,7 +156,6 @@ def get_detail_data():
                 if headers[SELLER_INFO]:  # 回传是否存在组件
                     name, pos, key_obj = headers[SELLER_INFO]
                     if not object_in_view(SELLER_INFO, pos):
-                        # print("找到部分厂家数据，翻动到顶部")
                         scroll_to_top(pos, top=0.3)
                     logger.info("读取厂家信息")
                     seller_info = get_seller_info()
@@ -175,7 +173,7 @@ def get_detail_data():
         # 组合采集的数据
         crawler_record['title'] = product
         crawler_record['share_text'] = share_text
-        crawler_record['snapshot'] = snap_filename
+        # crawler_record['snapshot'] = snap_filename
         crawler_record['price1'] = price1
         crawler_record['price2'] = price2
         crawler_record['price3'] = price3
@@ -339,7 +337,7 @@ def get_share_text():
                 "android.view.View").child("android.view.View")[0].child("android.view.View").offspring(
                 type="android.widget.Image")
         poco.wait_for_all(list(QR_obj), timeout=20)
-        sleep(0.3)
+        sleep(0.5)
         # 点击“复制口令”按钮
         copy_btn = poco("android:id/content").child("android.widget.FrameLayout").offspring(
             "com.alibaba.wireless:id/dynamic_share_channel_layout").offspring(
