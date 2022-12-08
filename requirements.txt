@@ -1,6 +1,6 @@
 airtest==1.0.26
 alembic==1.0.10
-certifi==2019.3.9
+certifi==2022.12.7
 chardet==3.0.4
 comtypes==1.1.7
 dataset==1.1.2
